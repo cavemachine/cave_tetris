@@ -1,9 +1,10 @@
-﻿#include <iostream>
+﻿#include <stdio.h>      /* printf, scanf, puts, NULL */
+#include <stdlib.h>     /* srand, rand */
+#include <time.h> 
 #include <unistd.h>
 #include <ncurses.h>
 #include <sys/time.h>
 #include <signal.h>
-#include <vector>
 #include "rotation.h"
 
 using namespace std;
@@ -16,20 +17,35 @@ void turn_right();
 void update_rotated();
 void check_full_row();
 void clear_row(int full_row);
+void random_piece();
 
 WINDOW * mainwin;
 WINDOW * childwin;
 char board[20][10];
 int board_height = 20;
 int board_width = 10;
-int x_piece = 5; // collumn where the first block of the piece is located at the moment.
-int y_piece = 0; // row where the first block of the piece is located at the moment.
+int x_piece = 5; 
+int y_piece = 0;
 
-vector < vector <char> > piece = {{'M','.'},
-                                  {'M','M'},
-                                  {'M','.'}};
+vector < vector <char> > piece = {{'M'}};
+
+vector < vector <char> > T_piece = {{'.','M', '.'},
+				    {'M','M', 'M'}};
+vector < vector <char> > L_piece = {{'.','.', 'M'},
+				    {'M','M', 'M'}};
+vector < vector <char> > J_piece = {{'M','.', '.'},
+				    {'M','M', 'M'}};
+vector < vector <char> > S_piece = {{'.','M', 'M'},
+				    {'M','M', '.'}};
+vector < vector <char> > Z_piece = {{'M','M', '.'},
+				    {'.','M', 'M'}};
+vector < vector <char> > I_piece = {{'M','M','M','M'}};
+vector < vector <char> > O_piece = {{'M','M'},
+				    {'M','M'}};
+
 vector < vector <char> > piece_tmp;
 
+//---------------------------------------------------//
 
 void make_board() {
     for (int y = 0; y < board_height; ++y) {
@@ -42,7 +58,7 @@ void make_board() {
     refresh();
   }
 
-void update_rotated() { // Check if rotate is possible; If so, display immediately the rotated piece
+void update_rotated() {
     bool can_rotate = true;
     for (int y = 0; y < piece_tmp.size(); ++y) {
         for (int x = 0; x < piece_tmp[0].size(); ++x) {
@@ -68,7 +84,7 @@ void update_rotated() { // Check if rotate is possible; If so, display immediate
       }
   }
 
-void update_board() { // Display the tetris board and the occuppied blocks
+void update_board() { 
     for (int y = 0; y < board_height; ++y) {
         for (int x = 0; x < board_width; ++x) {
             mvwaddch(childwin,y,x,board[y][x]);
@@ -78,11 +94,12 @@ void update_board() { // Display the tetris board and the occuppied blocks
     refresh();
   }
 
-void transform_M_to_x() { // When the piece stops dropping, transform the piece into fixed blocks.
+void transform_M_to_x() { 
     for (int y = 0; y < piece.size(); ++y) {
         for (int x = 0; x < piece[0].size(); ++x) {
             if (piece[y][x] == 'M') {
                 board[y_piece+y][x_piece+x] = 'x';
+
           }
       }
   }
@@ -103,7 +120,34 @@ void check_full_row() {
       }
   }
 
-void drop_piece(int signum) { // Drops the piece if it didnt reached a fixed block or the bottom of board
+void random_piece() {
+    srand (time(NULL));
+    int v = rand() % 6;
+    switch (v) {
+    case 0: 
+	piece = T_piece;
+	break;
+    case 1: 
+	piece = L_piece;
+	break;
+    case 2: 
+	piece = J_piece;
+	break;
+    case 3: 
+        piece = S_piece;
+	break;
+    case 4: 
+	piece = Z_piece;
+	break;
+    case 5: 
+        piece = I_piece;
+	break;
+    case 6:
+	piece = O_piece;
+	break;
+    }
+}
+void drop_piece(int signum) {
    bool can_go = true;
    for (size_t y = 0; y < piece.size(); ++y) {
        for (size_t x = 0; x < piece[0].size(); ++x) {
@@ -132,6 +176,7 @@ void drop_piece(int signum) { // Drops the piece if it didnt reached a fixed blo
        update_board();
        y_piece = 0;
        x_piece = 5;
+       random_piece();
      }
   }
 
@@ -194,13 +239,15 @@ void turn_right() {
       }
   }
 
+//---------------------------------------------------//
 
 int main() {
     int width = 12, height = 22;
     int x_childwin = 0;
     int y_childwin = 0;
     int ch;
-
+    
+    random_piece();
     // Setup Timer and Signal handler
     struct itimerval it;
     it.it_value.tv_sec = 0;
