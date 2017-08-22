@@ -1,23 +1,6 @@
-﻿#include <stdio.h>      /* printf, scanf, puts, NULL */
-#include <stdlib.h>     /* srand, rand */
-#include <time.h> 
-#include <unistd.h>
-#include <ncurses.h>
-#include <sys/time.h>
-#include <signal.h>
-#include "rotation.h"
+﻿#include "rotation.h"
 
 using namespace std;
-void make_board();
-void update_board();
-void transform_M_to_x();
-void drop_piece(int signum);
-void turn_left();
-void turn_right();
-void update_rotated();
-void check_full_row();
-void clear_row(int full_row);
-void random_piece();
 
 WINDOW * mainwin;
 WINDOW * childwin;
@@ -26,6 +9,7 @@ int board_height = 20;
 int board_width = 10;
 int x_piece = 5; 
 int y_piece = 0;
+int p_rotate = 0;
 
 vector < vector <char> > piece = {{'M'}};
 
@@ -44,34 +28,84 @@ vector < vector <char> > O_piece = {{'M','M'},
 				    {'M','M'}};
 
 vector < vector <char> > piece_tmp;
+char actual_piece;
+
 
 //---------------------------------------------------//
+
 
 void make_board() {
     for (int y = 0; y < board_height; ++y) {
         for (int x = 0; x < board_width; ++x) {
             board[y][x] = '.';
             mvwaddch(childwin,y,x,board[y][x]);
+	    	    	    
           }
       }
     touchwin(mainwin);
     refresh();
   }
 
+
 void update_rotated() {
     bool can_rotate = true;
+    int x_rot = 0;
+    int y_rot = 0;
+    
+    if (p_rotate < 3) { ++p_rotate; } else { p_rotate = 0; }
+    if ((actual_piece != 'S') && (actual_piece != 'Z') && (actual_piece != 'O')) {
+	if ((actual_piece == 'L') || (actual_piece == 'J') || (actual_piece == 'T')) {
+	    switch (p_rotate) {
+	    case 0:
+		break;
+	    case 1:
+		x_rot = 1;
+		break;
+	    case 2:
+		x_rot = -1;
+		y_rot = 1;    
+		break;
+	    case 3:
+		x_rot = 0;
+		y_rot = -1;
+		break;
+	    }
+	}
+	if (actual_piece == 'I') {
+	    switch (p_rotate) {
+	    case 0:
+		x_rot = -2;
+		y_rot = 2;  
+		break;
+	    case 1:
+		x_rot = 2;
+		y_rot = -2;
+		break;
+	    case 2:
+		x_rot = -2;
+		y_rot = 2;    
+		break;
+	    case 3:
+		x_rot = 2;
+		y_rot = -2;
+		break;
+	    }   
+	}
+    }
     for (int y = 0; y < piece_tmp.size(); ++y) {
         for (int x = 0; x < piece_tmp[0].size(); ++x) {
             if (piece_tmp[y][x] == 'M') {
-                if ((board[y_piece+y][x_piece+x] == 'x') || (x_piece+x > 9) || (x_piece+x < 0) || (y_piece+y > 19)) {
+                if ((board[y_piece + y + y_rot][x_piece + x + x_rot] == 'x') || (x_piece+x+x_rot > 9) || (x_piece+x+x_rot < 0) || (y_piece+y+y_rot > 19)) {
                     can_rotate = false;
                   }
               }
           }
       }
     if (can_rotate == true) {
+	update_board();		
         piece = piece_tmp;
-        update_board();
+	x_piece = x_piece + x_rot;
+	y_piece = y_piece + y_rot;
         for (int y = 0; y < piece.size(); ++y) {
             for (int x = 0; x < piece[0].size(); ++x) {
                 if (piece[y][x] == 'M') {
@@ -81,7 +115,9 @@ void update_rotated() {
           }
         touchwin(mainwin);
         refresh();
-      }
+    } else {
+      --p_rotate;
+    }
   }
 
 void update_board() { 
@@ -106,47 +142,68 @@ void transform_M_to_x() {
 }
 
 void clear_row(int full_row) {
-   mvwaddstr(mainwin,full_row+1,13,"<--FULL ROW");
-   refresh();
-  }
+    mvwaddstr(mainwin,full_row+1,13,"<--FULL ROW");
+    for (int y = full_row; y >= 0; --y) {
+	for (int x = board_width - 1; x >= 0; --x) {
+	    if (y > 0) {
+		board[y][x] = board[y-1][x];	       
+	    } else {
+		board[y][x] = '.';
+	    }
+	}
+    }
+    update_board();  
+}
 
 void check_full_row() {
     for (int y = 0; y < board_height; ++y) {
         for (int x = 0; x < board_width; ++x) {
             if (board[y][x] == '.') { break; }
-            if ((x == 9) && (board[y][x] == 'x')) { clear_row(y); }
-          }
+            if ((x == 9) && (board[y][x] == 'x')) {
+		clear_row(y);
+	    }
+	}
 
-      }
-  }
+    }
+}
 
 void random_piece() {
     srand (time(NULL));
-    int v = rand() % 6;
+    int v = rand() % 7;
     switch (v) {
     case 0: 
 	piece = T_piece;
+	actual_piece = 'T';
 	break;
     case 1: 
 	piece = L_piece;
+	actual_piece = 'L';
 	break;
     case 2: 
 	piece = J_piece;
+	actual_piece = 'J';
 	break;
     case 3: 
         piece = S_piece;
+	actual_piece = 'S';
 	break;
     case 4: 
 	piece = Z_piece;
+	actual_piece = 'Z';
 	break;
     case 5: 
         piece = I_piece;
+	actual_piece = 'I';
 	break;
     case 6:
 	piece = O_piece;
+	actual_piece = 'O';
 	break;
     }
+    p_rotate = 0;
+    
 }
+
 void drop_piece(int signum) {
    bool can_go = true;
    for (size_t y = 0; y < piece.size(); ++y) {
@@ -180,6 +237,7 @@ void drop_piece(int signum) {
      }
   }
 
+
 void turn_left() {
     bool can_go_left = true;
     for (size_t y = 0; y < piece.size(); ++y) {
@@ -206,6 +264,7 @@ void turn_left() {
         touchwin(mainwin);
         refresh();
        --x_piece;
+ 
       }
   }
 
@@ -240,6 +299,7 @@ void turn_right() {
   }
 
 //---------------------------------------------------//
+
 
 int main() {
     int width = 12, height = 22;
@@ -281,6 +341,7 @@ int main() {
         case KEY_UP:
           piece_tmp = rotate_90degrees(piece);
           update_rotated();
+	  break;	    
           }
       }
 

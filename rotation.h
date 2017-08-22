@@ -10,11 +10,19 @@
 #include <sys/time.h>
 #include <signal.h>
 
-
 using namespace std;
 
 void print_piece(vector < vector<char> > &piece_original);
 vector<vector<char> > rotate_90degrees(vector<vector<char> > &piece_original);
-
+void make_board();
+void update_board();
+void transform_M_to_x();
+void drop_piece(int signum);
+void turn_left();
+void turn_right();
+void update_rotated();
+void check_full_row();
+void clear_row(int full_row);
+void random_piece();
 
 #endif // ROTATION_H
