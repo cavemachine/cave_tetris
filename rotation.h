@@ -9,6 +9,7 @@
 #include <ncurses.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <string.h>
 
 using namespace std;
 
@@ -24,5 +25,9 @@ void update_rotated();
 void check_full_row();
 void clear_row(int full_row);
 void random_piece();
+void update_score();
+void update_lines();
+void game_over(int signum);
+void new_game();
 
 #endif // ROTATION_H

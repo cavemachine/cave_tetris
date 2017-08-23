@@ -1,15 +1,18 @@
 ﻿#include "rotation.h"
 
+
+
 using namespace std;
 
 WINDOW * mainwin;
 WINDOW * childwin;
-char board[20][10];
-int board_height = 20;
-int board_width = 10;
-int x_piece = 5; 
-int y_piece = 0;
-int p_rotate = 0;
+WINDOW * scorewin;
+WINDOW * msgwin;
+const int board_height = 20;
+const int board_width = 10;
+char board[board_height][board_width];
+int x_piece = (board_width / 2) - 1; 
+int y_piece = -1;
 
 vector < vector <char> > piece = {{'M'}};
 
@@ -28,18 +31,44 @@ vector < vector <char> > O_piece = {{'M','M'},
 				    {'M','M'}};
 
 vector < vector <char> > piece_tmp;
-char actual_piece;
 
+char actual_piece;
+bool can_go = true;
+int p_rotate = 0;
+int score_integer = 0;
+int lines = 0;
 
 //---------------------------------------------------//
 
+void new_game() {
+    y_piece = -1;
+    x_piece = board_width/2 - 1;
+    score_integer = 0;
+    lines = 0;
+    can_go = true;
+
+    struct itimerval it;
+    it.it_value.tv_sec = 0;
+    it.it_value.tv_usec = 500000;
+    it.it_interval = it.it_value;
+    setitimer(ITIMER_REAL, &it, NULL);
+    signal(SIGALRM,drop_piece);
+
+    werase(msgwin);
+    werase(scorewin);
+    box(scorewin,0,0);
+    update_score();
+    update_lines();
+
+    random_piece();
+    make_board(); 
+}
 
 void make_board() {
     for (int y = 0; y < board_height; ++y) {
         for (int x = 0; x < board_width; ++x) {
             board[y][x] = '.';
-            mvwaddch(childwin,y,x,board[y][x]);
-	    	    	    
+            mvwaddch(childwin,y,x,board[y][x]);	    	    	    
           }
       }
     touchwin(mainwin);
@@ -95,7 +124,7 @@ void update_rotated() {
     for (int y = 0; y < piece_tmp.size(); ++y) {
         for (int x = 0; x < piece_tmp[0].size(); ++x) {
             if (piece_tmp[y][x] == 'M') {
-                if ((board[y_piece + y + y_rot][x_piece + x + x_rot] == 'x') || (x_piece+x+x_rot > 9) || (x_piece+x+x_rot < 0) || (y_piece+y+y_rot > 19)) {
+                if ((board[y_piece + y + y_rot][x_piece + x + x_rot] == 'x') || (x_piece+x+x_rot > board_width - 1) || (x_piece+x+x_rot < 0) || (y_piece+y+y_rot > board_height - 1)) {
                     can_rotate = false;
                   }
               }
@@ -130,6 +159,67 @@ void update_board() {
     refresh();
   }
 
+void update_lines() {
+    char line_tmp[10];
+    char line_string[30] = "Lines: ";
+    sprintf(line_tmp,"%d",lines);
+    strcat(line_string,line_tmp);
+    mvwaddstr(scorewin,2,1,line_string);
+
+    touchwin(mainwin);
+    refresh(); 
+}
+
+void update_score() {
+    char score_tmp[10];
+    char score_string[30] = "Score: ";
+    sprintf(score_tmp,"%d",score_integer);
+    strcat(score_string,score_tmp);
+    mvwaddstr(scorewin,1,1,score_string);
+
+    touchwin(mainwin);
+    refresh(); 
+}
+
+void drop_piece(int signum) {
+    update_board();
+    for (int y = 0; y < piece.size(); ++y) {
+	for (int x = 0; x < piece[0].size(); ++x) {
+	    if (piece[y][x] == 'M')
+		if ((board[y_piece+1+y][x_piece+x] == 'x') || (y_piece+1 + piece.size() > board_height)) {
+		    can_go = false;
+		}
+	}
+    }  
+    if (can_go == true) {
+	++y_piece;
+	for (int y = 0; y < piece.size(); ++y) {
+	    for (int x = 0; x < piece[0].size(); ++x) {
+		if (piece[y][x] == 'M') {
+		    mvwaddch(childwin,y_piece+y,x_piece+x,'M');
+		}	
+	    }
+	}
+	touchwin(mainwin);
+	refresh();
+        
+    } else {
+	if (y_piece == -1) {
+	    game_over(0);
+	} else {
+    	transform_M_to_x();
+    	check_full_row();
+    	update_board();
+    	y_piece = -1;
+    	x_piece = board_width/2 - 1;
+    	random_piece();
+    	score_integer = score_integer + 2;
+    	update_score();
+        can_go = true;
+	}
+    }
+}
+
 void transform_M_to_x() { 
     for (int y = 0; y < piece.size(); ++y) {
         for (int x = 0; x < piece[0].size(); ++x) {
@@ -142,7 +232,6 @@ void transform_M_to_x() {
 }
 
 void clear_row(int full_row) {
-    mvwaddstr(mainwin,full_row+1,13,"<--FULL ROW");
     for (int y = full_row; y >= 0; --y) {
 	for (int x = board_width - 1; x >= 0; --x) {
 	    if (y > 0) {
@@ -152,14 +241,20 @@ void clear_row(int full_row) {
 	    }
 	}
     }
-    update_board();  
+    update_board();
+    score_integer = score_integer + 10;
+    update_score();
+    ++lines;
+    update_lines();
+    
+    
 }
 
 void check_full_row() {
     for (int y = 0; y < board_height; ++y) {
         for (int x = 0; x < board_width; ++x) {
             if (board[y][x] == '.') { break; }
-            if ((x == 9) && (board[y][x] == 'x')) {
+            if ((x == board_width - 1) && (board[y][x] == 'x')) {
 		clear_row(y);
 	    }
 	}
@@ -204,38 +299,14 @@ void random_piece() {
     
 }
 
-void drop_piece(int signum) {
-   bool can_go = true;
-   for (size_t y = 0; y < piece.size(); ++y) {
-       for (size_t x = 0; x < piece[0].size(); ++x) {
-           if (piece[y][x] == 'M') {
-               if ((board[y_piece+1+y][x_piece+x] == 'x') || (y_piece+1 + piece.size() > 20)) {
-                   can_go = false;
-             }
-         }
-     }
-   }
-   update_board();
-   if (can_go == true) {
-      for (int y = 0; y < piece.size(); ++y) {
-          for (int x = 0; x < piece[0].size(); ++x) {
-              if (piece[y][x] == 'M') {
-                  mvwaddch(childwin,y_piece+y,x_piece+x,'M');
-                }
-            }
-        }
-      touchwin(mainwin);
-      refresh();
-      ++y_piece;
-     } else {
-       transform_M_to_x();
-       check_full_row();
-       update_board();
-       y_piece = 0;
-       x_piece = 5;
-       random_piece();
-     }
-  }
+void game_over(int signum) {
+    signal(SIGALRM,game_over);
+    mvwaddstr(msgwin,1,1,"GAME OVER");
+    mvwaddstr(msgwin,3,1,"n: new game");
+    mvwaddstr(msgwin,4,1,"q: quit");
+    touchwin(mainwin);
+    refresh();
+}
 
 
 void turn_left() {
@@ -243,7 +314,7 @@ void turn_left() {
     for (size_t y = 0; y < piece.size(); ++y) {
         for (size_t x = 0; x < piece[0].size(); ++x) {
            if (piece[y][x] == 'M') {
-               if ((board[y_piece+y-1][x_piece+x-1] == 'x') || (x_piece+x == 0)) {
+               if ((board[y_piece+y][x_piece+x-1] == 'x') || (x_piece+x == 0)) {
                    can_go_left = false; // DAMN
                    mvwaddch(mainwin,22,26,'P');
                    refresh();
@@ -273,7 +344,7 @@ void turn_right() {
     for (size_t y = 0; y < piece.size(); ++y) {
         for (size_t x = 0; x < piece[0].size(); ++x) {
            if (piece[y][x] == 'M') {
-               if ((board[y_piece+y-1][x_piece+x+1] == 'x') || (x_piece + x == 9)) {
+               if ((board[y_piece+y][x_piece+x+1] == 'x') || (x_piece + x == board_width - 1)) {
                    can_go_right = false;
                    mvwaddch(mainwin,22,26,'P');
                    refresh();
@@ -298,36 +369,34 @@ void turn_right() {
       }
   }
 
+
 //---------------------------------------------------//
 
-
 int main() {
-    int width = 12, height = 22;
+    int width = board_width + 2;
+    int height = board_height + 2;
     int x_childwin = 0;
     int y_childwin = 0;
     int ch;
     
-    random_piece();
-    // Setup Timer and Signal handler
-    struct itimerval it;
-    it.it_value.tv_sec = 0;
-    it.it_value.tv_usec = 500000;
-    it.it_interval = it.it_value;
-    setitimer(ITIMER_REAL, &it, NULL);
-    signal(SIGALRM,drop_piece);
-
     // Initialize ncurses windows
     mainwin = initscr();
     noecho();
     keypad(mainwin, TRUE);
     childwin = subwin(mainwin, height, width, y_childwin, x_childwin);
-
+    scorewin = subwin(mainwin,5,15,0,board_width + 3);
+    msgwin = subwin(mainwin,10,25,10,board_width + 3);
+   
     // Create tetris board array and show on window;
     box(childwin,0,0);
+    box(scorewin,0,0);
+    //box(msgwin,0,0);
     mvderwin(childwin,1,1);
-    make_board();
+
+    new_game();
 
     while ( (ch = getch()) != 'q' ) {
+	
         switch ( ch ) {
         case KEY_LEFT:
           turn_left();
@@ -341,14 +410,18 @@ int main() {
         case KEY_UP:
           piece_tmp = rotate_90degrees(piece);
           update_rotated();
-	  break;	    
+	  break;
+	case 'n':
+	    new_game();
           }
       }
-
+    delwin(msgwin);
+    delwin(scorewin);
     delwin(childwin);
     delwin(mainwin);
-    endwin();
     refresh();
+    endwin();
+    cout << "BYE\n";
   }
 
 
