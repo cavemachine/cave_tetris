@@ -1,44 +1,4 @@
-﻿#include "rotation.h"
-
-
-
-using namespace std;
-
-WINDOW * mainwin;
-WINDOW * childwin;
-WINDOW * scorewin;
-WINDOW * msgwin;
-const int board_height = 20;
-const int board_width = 10;
-char board[board_height][board_width];
-int x_piece = (board_width / 2) - 1; 
-int y_piece = -1;
-
-vector < vector <char> > piece = {{'M'}};
-
-vector < vector <char> > T_piece = {{'.','M', '.'},
-				    {'M','M', 'M'}};
-vector < vector <char> > L_piece = {{'.','.', 'M'},
-				    {'M','M', 'M'}};
-vector < vector <char> > J_piece = {{'M','.', '.'},
-				    {'M','M', 'M'}};
-vector < vector <char> > S_piece = {{'.','M', 'M'},
-				    {'M','M', '.'}};
-vector < vector <char> > Z_piece = {{'M','M', '.'},
-				    {'.','M', 'M'}};
-vector < vector <char> > I_piece = {{'M','M','M','M'}};
-vector < vector <char> > O_piece = {{'M','M'},
-				    {'M','M'}};
-
-vector < vector <char> > piece_tmp;
-
-char actual_piece;
-bool can_go = true;
-int p_rotate = 0;
-int score_integer = 0;
-int lines = 0;
-
-//---------------------------------------------------//
+#include "globals.h"
 
 void new_game() {
     y_piece = -1;
@@ -76,79 +36,6 @@ void make_board() {
   }
 
 
-void update_rotated() {
-    bool can_rotate = true;
-    int x_rot = 0;
-    int y_rot = 0;
-    
-    if (p_rotate < 3) { ++p_rotate; } else { p_rotate = 0; }
-    if ((actual_piece != 'S') && (actual_piece != 'Z') && (actual_piece != 'O')) {
-	if ((actual_piece == 'L') || (actual_piece == 'J') || (actual_piece == 'T')) {
-	    switch (p_rotate) {
-	    case 0:
-		break;
-	    case 1:
-		x_rot = 1;
-		break;
-	    case 2:
-		x_rot = -1;
-		y_rot = 1;    
-		break;
-	    case 3:
-		x_rot = 0;
-		y_rot = -1;
-		break;
-	    }
-	}
-	if (actual_piece == 'I') {
-	    switch (p_rotate) {
-	    case 0:
-		x_rot = -2;
-		y_rot = 2;  
-		break;
-	    case 1:
-		x_rot = 2;
-		y_rot = -2;
-		break;
-	    case 2:
-		x_rot = -2;
-		y_rot = 2;    
-		break;
-	    case 3:
-		x_rot = 2;
-		y_rot = -2;
-		break;
-	    }   
-	}
-    }
-    for (int y = 0; y < piece_tmp.size(); ++y) {
-        for (int x = 0; x < piece_tmp[0].size(); ++x) {
-            if (piece_tmp[y][x] == 'M') {
-                if ((board[y_piece + y + y_rot][x_piece + x + x_rot] == 'x') || (x_piece+x+x_rot > board_width - 1) || (x_piece+x+x_rot < 0) || (y_piece+y+y_rot > board_height - 1)) {
-                    can_rotate = false;
-                  }
-              }
-          }
-      }
-    if (can_rotate == true) {
-	update_board();		
-        piece = piece_tmp;
-	x_piece = x_piece + x_rot;
-	y_piece = y_piece + y_rot;
-        for (int y = 0; y < piece.size(); ++y) {
-            for (int x = 0; x < piece[0].size(); ++x) {
-                if (piece[y][x] == 'M') {
-                    mvwaddch(childwin,y_piece+y,x_piece+x,'M');
-                  }
-              }
-          }
-        touchwin(mainwin);
-        refresh();
-    } else {
-      --p_rotate;
-    }
-  }
-
 void update_board() { 
     for (int y = 0; y < board_height; ++y) {
         for (int x = 0; x < board_width; ++x) {
@@ -181,45 +68,6 @@ void update_score() {
     refresh(); 
 }
 
-void drop_piece(int signum) {
-    update_board();
-    for (int y = 0; y < piece.size(); ++y) {
-	for (int x = 0; x < piece[0].size(); ++x) {
-	    if (piece[y][x] == 'M')
-		if ((board[y_piece+1+y][x_piece+x] == 'x') || (y_piece+1 + piece.size() > board_height)) {
-		    can_go = false;
-		}
-	}
-    }  
-    if (can_go == true) {
-	++y_piece;
-	for (int y = 0; y < piece.size(); ++y) {
-	    for (int x = 0; x < piece[0].size(); ++x) {
-		if (piece[y][x] == 'M') {
-		    mvwaddch(childwin,y_piece+y,x_piece+x,'M');
-		}	
-	    }
-	}
-	touchwin(mainwin);
-	refresh();
-        
-    } else {
-	if (y_piece == -1) {
-	    game_over(0);
-	} else {
-    	transform_M_to_x();
-    	check_full_row();
-    	update_board();
-    	y_piece = -1;
-    	x_piece = board_width/2 - 1;
-    	random_piece();
-    	score_integer = score_integer + 2;
-    	update_score();
-        can_go = true;
-	}
-    }
-}
-
 void transform_M_to_x() { 
     for (int y = 0; y < piece.size(); ++y) {
         for (int x = 0; x < piece[0].size(); ++x) {
@@ -229,6 +77,18 @@ void transform_M_to_x() {
           }
       }
   }
+}
+
+void check_full_row() {
+    for (int y = 0; y < board_height; ++y) {
+        for (int x = 0; x < board_width; ++x) {
+            if (board[y][x] == '.') { break; }
+            if ((x == board_width - 1) && (board[y][x] == 'x')) {
+		clear_row(y);
+	    }
+	}
+
+    }
 }
 
 void clear_row(int full_row) {
@@ -246,20 +106,6 @@ void clear_row(int full_row) {
     update_score();
     ++lines;
     update_lines();
-    
-    
-}
-
-void check_full_row() {
-    for (int y = 0; y < board_height; ++y) {
-        for (int x = 0; x < board_width; ++x) {
-            if (board[y][x] == '.') { break; }
-            if ((x == board_width - 1) && (board[y][x] == 'x')) {
-		clear_row(y);
-	    }
-	}
-
-    }
 }
 
 void random_piece() {
@@ -308,68 +154,6 @@ void game_over(int signum) {
     refresh();
 }
 
-
-void turn_left() {
-    bool can_go_left = true;
-    for (size_t y = 0; y < piece.size(); ++y) {
-        for (size_t x = 0; x < piece[0].size(); ++x) {
-           if (piece[y][x] == 'M') {
-               if ((board[y_piece+y][x_piece+x-1] == 'x') || (x_piece+x == 0)) {
-                   can_go_left = false; // DAMN
-                   mvwaddch(mainwin,22,26,'P');
-                   refresh();
-                   break;
-                 }
-             }
-          }
-       }
-    if (can_go_left == true) {
-        update_board();
-        for (int y = 0; y < piece.size(); ++y) {
-            for (int x = 0; x < piece[0].size(); ++x) {
-                if (piece[y][x] == 'M') {
-                    mvwaddch(childwin,y_piece+y,x_piece+x-1,'M');
-                  }
-              }
-          }
-        touchwin(mainwin);
-        refresh();
-       --x_piece;
- 
-      }
-  }
-
-void turn_right() {
-    bool can_go_right = true;
-    for (size_t y = 0; y < piece.size(); ++y) {
-        for (size_t x = 0; x < piece[0].size(); ++x) {
-           if (piece[y][x] == 'M') {
-               if ((board[y_piece+y][x_piece+x+1] == 'x') || (x_piece + x == board_width - 1)) {
-                   can_go_right = false;
-                   mvwaddch(mainwin,22,26,'P');
-                   refresh();
-                   break;
-                 }
-             }
-          }
-       }
-
-    if (can_go_right == true) {
-        update_board();
-        for (int y = 0; y < piece.size(); ++y) {
-            for (int x = 0; x < piece[0].size(); ++x) {
-                if (piece[y][x] == 'M') {
-                    mvwaddch(childwin,y_piece+y,x_piece+x+1,'M');
-                  }
-              }
-          }
-        touchwin(mainwin);
-        refresh();
-       ++x_piece;
-      }
-  }
-
-
 //---------------------------------------------------//
 
 int main() {
@@ -385,7 +169,8 @@ int main() {
     keypad(mainwin, TRUE);
     childwin = subwin(mainwin, height, width, y_childwin, x_childwin);
     scorewin = subwin(mainwin,5,15,0,board_width + 3);
-    msgwin = subwin(mainwin,10,25,10,board_width + 3);
+    msgwin = subwin(mainwin,10,25,10
+		    ,board_width + 3);
    
     // Create tetris board array and show on window;
     box(childwin,0,0);
@@ -423,5 +208,3 @@ int main() {
     endwin();
     cout << "BYE\n";
   }
-
-
