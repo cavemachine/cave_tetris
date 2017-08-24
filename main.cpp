@@ -1,28 +1,6 @@
+
 #include "globals.h"
 
-void new_game() {
-    y_piece = -1;
-    x_piece = board_width/2 - 1;
-    score_integer = 0;
-    lines = 0;
-    can_go = true;
-
-    struct itimerval it;
-    it.it_value.tv_sec = 0;
-    it.it_value.tv_usec = 500000;
-    it.it_interval = it.it_value;
-    setitimer(ITIMER_REAL, &it, NULL);
-    signal(SIGALRM,drop_piece);
-
-    werase(msgwin);
-    werase(scorewin);
-    box(scorewin,0,0);
-    update_score();
-    update_lines();
-
-    random_piece();
-    make_board(); 
-}
 
 void make_board() {
     for (int y = 0; y < board_height; ++y) {
@@ -154,57 +132,124 @@ void game_over(int signum) {
     refresh();
 }
 
+void new_game() {
+    werase(mainwin);
+    mvderwin(childwin,0,0);
+    box(childwin,0,0);
+    mvderwin(childwin,1,1);
+    werase(msgwin);
+    werase(scorewin);
+    box(scorewin,0,0);
+    refresh();
+    
+    y_piece = -1;
+    x_piece = board_width/2 - 1;
+    score_integer = 0;
+    lines = 0;
+    can_go = true;
+    menu = false;
+
+    it.it_value.tv_sec = 0;
+    it.it_value.tv_usec = speed;
+    it.it_interval = it.it_value;
+    setitimer(ITIMER_REAL, &it, NULL);
+    signal(SIGALRM,drop_piece);
+
+    random_piece();
+    make_board(); 
+    update_score();
+    update_lines();
+}
+
+void pause_game() {
+    paused = !paused;
+    if (paused == true){
+	mvwaddstr(msgwin,1,1,"> PAUSED <");
+	touchwin(mainwin);
+	refresh();
+
+	it.it_value.tv_sec = 0;
+	it.it_value.tv_usec = 0;
+	it.it_interval = it.it_value;
+	setitimer(ITIMER_REAL, &it, NULL);
+    } else {
+	werase(msgwin);
+	touchwin(mainwin);
+	refresh();
+	
+	it.it_value.tv_sec = 0;
+	it.it_value.tv_usec = speed;
+	it.it_interval = it.it_value;
+	setitimer(ITIMER_REAL, &it, NULL);
+    }
+}
 //---------------------------------------------------//
 
 int main() {
+    int ch;
     int width = board_width + 2;
     int height = board_height + 2;
-    int x_childwin = 0;
-    int y_childwin = 0;
-    int ch;
-    
-    // Initialize ncurses windows
+    int row;
+    int col;
+ 
     mainwin = initscr();
     noecho();
     keypad(mainwin, TRUE);
-    childwin = subwin(mainwin, height, width, y_childwin, x_childwin);
-    scorewin = subwin(mainwin,5,15,0,board_width + 3);
-    msgwin = subwin(mainwin,10,25,10
-		    ,board_width + 3);
-   
-    // Create tetris board array and show on window;
-    box(childwin,0,0);
-    box(scorewin,0,0);
-    //box(msgwin,0,0);
-    mvderwin(childwin,1,1);
 
-    new_game();
+    childwin = subwin(mainwin, height, width, 0, 0);
+    scorewin = subwin(mainwin,5,15,0,board_width + 3);
+    msgwin = subwin(mainwin,10,25,10,board_width + 3);
+
+    getmaxyx(stdscr,row,col);
+    mvwaddstr(mainwin , 1,  (col/2)-10 ,"CAVE TETRIS");
+    mvwaddstr(mainwin , 3 , (col/2)-10 ,"n: new game");
+    mvwaddstr(mainwin , 4 , (col/2)-10 ,"p: pause");    
+    mvwaddstr(mainwin , 5 , (col/2)-10 ,"q: quit");
+    mvwaddstr(mainwin , 7 , (col/2)-10 ,"Arrow keys:");
+    mvwaddstr(mainwin , 8 , (col/2)-10 ,"<: move left");
+    mvwaddstr(mainwin , 9 , (col/2)-10 ,">: move right");
+    mvwaddstr(mainwin , 10 , (col/2)-10 ,"^: rotate");
+    mvwaddstr(mainwin , 11 , (col/2)-10 ,"V: drop faster");
+
 
     while ( (ch = getch()) != 'q' ) {
-	
         switch ( ch ) {
-        case KEY_LEFT:
-          turn_left();
-          break;
-        case KEY_RIGHT:
-          turn_right();
-          break;
-        case KEY_DOWN:
-          drop_piece(0);
-          break;
-        case KEY_UP:
-          piece_tmp = rotate_90degrees(piece);
-          update_rotated();
-	  break;
+	case KEY_LEFT:
+	    if ((paused == false) && (menu == false)){
+		turn_left();
+	    }
+		break;
+	case KEY_RIGHT:
+	    if ((paused == false) && (menu == false)){
+		turn_right();
+	    }
+		break;
+	case KEY_DOWN:
+	    if ((paused == false) && (menu == false)){
+		drop_piece(0);
+	    }
+		break;
+	case KEY_UP:
+	    if ((paused == false) && (menu == false)){
+		piece_tmp = rotate_90degrees(piece);
+		update_rotated();
+	    }
+		break;
 	case 'n':
 	    new_game();
-          }
-      }
+	    break;
+	case 'p':
+	    if (menu == false) {
+		pause_game();		
+	    }
+	    break;
+	}
+    }
     delwin(msgwin);
     delwin(scorewin);
     delwin(childwin);
     delwin(mainwin);
     refresh();
     endwin();
-    cout << "BYE\n";
+    cout << "BYE";
   }

@@ -30,6 +30,10 @@ vector < vector <char> > piece_tmp;
 
 char actual_piece;
 bool can_go = true;
+bool menu = true;
 int p_rotate = 0;
 int score_integer = 0;
 int lines = 0;
+struct itimerval it;
+int speed = 500000;
+bool paused = false;

@@ -37,6 +37,10 @@ extern bool can_go;
 extern int p_rotate;
 extern int score_integer;
 extern int lines;
+extern struct itimerval it;
+extern int speed;
+extern bool paused;
+extern bool menu;
 
 // -------------- FUNCTIONS DECLARATIONS --------------//
 
@@ -55,3 +59,4 @@ void update_score();
 void update_lines();
 void game_over(int signum);
 void new_game();
+void pause_game();
