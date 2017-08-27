@@ -146,6 +146,7 @@ void new_game() {
     x_piece = board_width/2 - 1;
     score_integer = 0;
     lines = 0;
+    
     can_go = true;
     menu = false;
 
@@ -184,6 +185,64 @@ void pause_game() {
     }
 }
 //---------------------------------------------------//
+void options() {
+    WINDOW * options_win;
+    options_win = subwin(mainwin, 10 ,25 , 1 , 20);
+    wclear(options_win);
+    mvwprintw(options_win,1,1,"Speed:");
+    mvwprintw(options_win,2,1,"1. Easy (constant)");
+    mvwprintw(options_win,3,1,"2. Normal (speeds up)");
+    mvwprintw(options_win,4,1,"3. Hard");
+    mvwprintw(options_win,6,1,"q: Cancel");
+    mvwprintw(options_win,7,1,"s: Save and exit");
+    box(options_win,0,0);
+    touchwin(mainwin);
+    refresh();
+
+    char ch;
+    ch = 1;
+    while (1) {
+	ch = getch();
+	if (ch == 'q') { break; }
+	if (ch == '\n') {
+	    mvwprintw(options_win,8,10,"*SAVED*");
+	    touchwin(mainwin);
+	    refresh();
+	}
+        switch ( ch ) {
+	case '1':
+	    wattron(options_win,A_BOLD);
+	    mvwprintw(options_win,2,1,"1. Easy (constant)");
+	    wattroff(options_win,A_BOLD);
+	    mvwprintw(options_win,3,1,"2. Normal (speeds up)");
+	    mvwprintw(options_win,4,1,"3. Hard");
+	    touchwin(mainwin);
+	    refresh();
+	    break;
+	case '2':	    
+	    mvwprintw(options_win,2,1,"1. Easy (constant)");
+	    wattron(options_win,A_BOLD);
+	    mvwprintw(options_win,3,1,"2. Normal (speeds up)");
+	    wattroff(options_win,A_BOLD);
+	    mvwprintw(options_win,4,1,"3. Hard");
+	    touchwin(mainwin);
+	    refresh();
+	    break;
+	case '3':
+	    mvwprintw(options_win,2,1,"1. Easy (constant)");
+	    mvwprintw(options_win,3,1,"2. Normal (speeds up)");
+	    wattron(options_win,A_BOLD);
+	    mvwprintw(options_win,4,1,"3. Hard");
+	    wattroff(options_win,A_BOLD);
+	    touchwin(mainwin);
+	    refresh();
+	    break;
+	}
+    }
+    wclear(options_win);
+    delwin(options_win);
+    refresh();
+}
 
 int main() {
     int ch;
@@ -199,24 +258,32 @@ int main() {
     childwin = subwin(mainwin, height, width, 0, 0);
     scorewin = subwin(mainwin,5,15,0,board_width + 3);
     msgwin = subwin(mainwin,10,25,10,board_width + 3);
-
     getmaxyx(stdscr,row,col);
-    mvwaddstr(mainwin , 1,  (col/2)-10 ,"CAVE TETRIS");
-    mvwaddstr(mainwin , 3 , (col/2)-10 ,"n: new game");
-    mvwaddstr(mainwin , 4 , (col/2)-10 ,"p: pause");    
-    mvwaddstr(mainwin , 5 , (col/2)-10 ,"q: quit");
-    mvwaddstr(mainwin , 7 , (col/2)-10 ,"Arrow keys:");
-    mvwaddstr(mainwin , 8 , (col/2)-10 ,"<: move left");
-    mvwaddstr(mainwin , 9 , (col/2)-10 ,">: move right");
-    mvwaddstr(mainwin , 10 , (col/2)-10 ,"^: rotate");
-    mvwaddstr(mainwin , 11 , (col/2)-10 ,"V: drop faster");
-
+    // start_color();
+    // init_pair(1,COLOR_YELLOW
+    // 	      , COLOR_BLACK);
+    // wbkgd(mainwin, COLOR_PAIR(1));
+    
+    box(mainwin,0,0);
+    mvwaddstr(mainwin , 1,  2 ,"Cave Tetris");
+    mvwaddstr(mainwin , 3 , 2 ,"n: new game");
+    mvwaddstr(mainwin , 4 , 2 ,"p: pause");
+    mvwaddstr(mainwin , 5 , 2 ,"s: speed config");
+    mvwaddstr(mainwin , 6 , 2 ,"b: board config");   
+    mvwaddstr(mainwin , 7 , 2 ,"q: quit");
+    mvwaddstr(mainwin , 9 , 2 ,"Controllers:");
+    mvwaddstr(mainwin , 10 , 2 ,"<: move left");
+    mvwaddstr(mainwin , 11 , 2 ,">: move right");
+    mvwaddstr(mainwin , 12 , 2 ,"^: rotate");
+    mvwaddstr(mainwin , 13 , 2 ,"V: drop faster");
 
     while ( (ch = getch()) != 'q' ) {
         switch ( ch ) {
 	case KEY_LEFT:
 	    if ((paused == false) && (menu == false)){
-		turn_left();
+		turn) {
+	case KEY_LEFT:
+	    if ((pau_left();
 	    }
 		break;
 	case KEY_RIGHT:
@@ -241,6 +308,11 @@ int main() {
 	case 'p':
 	    if (menu == false) {
 		pause_game();		
+	    }
+	    break;
+	case 'o':
+	    if (menu == true) {
+		options();
 	    }
 	    break;
 	}

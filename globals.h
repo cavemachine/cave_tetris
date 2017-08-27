@@ -60,3 +60,4 @@ void update_lines();
 void game_over(int signum);
 void new_game();
 void pause_game();
+void options();
